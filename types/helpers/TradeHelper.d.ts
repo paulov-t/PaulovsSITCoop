@@ -27,25 +27,37 @@ export declare class TradeHelper {
     protected configServer: ConfigServer;
     protected traderConfig: ITraderConfig;
     constructor(logger: ILogger, eventOutputHolder: EventOutputHolder, traderHelper: TraderHelper, itemHelper: ItemHelper, paymentService: PaymentService, fenceService: FenceService, httpResponse: HttpResponseUtil, inventoryHelper: InventoryHelper, ragfairServer: RagfairServer, configServer: ConfigServer);
-    /**
+     /**
      * Buy item from flea or trader
      * @param pmcData Player profile
      * @param buyRequestData data from client
      * @param sessionID Session id
      * @param foundInRaid Should item be found in raid
-     * @param upd optional item details used when buying from flea
-     * @returns
+     * @param output IItemEventRouterResponse
+     * @returns IItemEventRouterResponse
      */
-    buyItem(pmcData: IPmcData, buyRequestData: IProcessBuyTradeRequestData, sessionID: string, foundInRaid: boolean, upd: Upd): IItemEventRouterResponse;
+     public buyItem(
+        pmcData: IPmcData,
+        buyRequestData: IProcessBuyTradeRequestData,
+        sessionID: string,
+        foundInRaid: boolean,
+        output: IItemEventRouterResponse,
+    ): void
     /**
      * Sell item to trader
      * @param profileWithItemsToSell Profile to remove items from
      * @param profileToReceiveMoney Profile to accept the money for selling item
      * @param sellRequest Request data
      * @param sessionID Session id
-     * @returns IItemEventRouterResponse
+     * @param output IItemEventRouterResponse
      */
-    sellItem(profileWithItemsToSell: IPmcData, profileToReceiveMoney: IPmcData, sellRequest: IProcessSellTradeRequestData, sessionID: string): IItemEventRouterResponse;
+    public sellItem(
+        profileWithItemsToSell: IPmcData,
+        profileToReceiveMoney: IPmcData,
+        sellRequest: IProcessSellTradeRequestData,
+        sessionID: string,
+        output: IItemEventRouterResponse,
+    ): void
     /**
      * Increment the assorts buy count by number of items purchased
      * Show error on screen if player attempts to buy more than what the buy max allows

@@ -19,6 +19,8 @@ import { BearTrader } from "./BearTrader";
 import { CoopGroupTrader } from "./CoopGroupTrader";
 import { FluentAssortConstructor } from "./FluentTraderAssortCreator";
 import { UsecTrader } from "./UsecTrader";
+import { IItemEventRouterResponse } from "@spt-aki/models/eft/itemEvent/IItemEventRouterResponse";
+import { EventOutputHolder } from "@spt-aki/routers/EventOutputHolder";
 
 export class SITCustomTraders implements IPreAkiLoadMod, IPostDBLoadMod
 {
@@ -30,6 +32,7 @@ export class SITCustomTraders implements IPreAkiLoadMod, IPostDBLoadMod
     public static traders: any[] = [];
     databaseServer: DatabaseServer;
     traderAssortHelper: TraderAssortHelper;
+    protected eventOutputHolder: EventOutputHolder;
 
     preAkiLoad(container: DependencyContainer): void {
 
@@ -46,14 +49,15 @@ export class SITCustomTraders implements IPreAkiLoadMod, IPostDBLoadMod
         this.itemHelper = container.resolve<ItemHelper>("ItemHelper");
         this.hashUtil = container.resolve<HashUtil>("HashUtil");
         this.traderAssortHelper = container.resolve<TraderAssortHelper>("TraderAssortHelper");
-
         this.fluentTraderAssortCreator = new FluentAssortConstructor(this.hashUtil, this.logger);
+        this.eventOutputHolder = container.resolve<EventOutputHolder>("EventOutputHolder");
 
         container.afterResolution("TradeController", (_t, result: TradeController) => 
         {
             // When the player trades with the Custom Traders, do stuff with the logic
             result.confirmTrading = (pmcData: IPmcData, request: IProcessBaseTradeRequestData, sessionID: string) =>
             {
+                const output = this.eventOutputHolder.getOutput(sessionID);
                 console.log("SITCustomTraders...");
                 console.log(request);
                 console.log("===== <> =====");
@@ -62,7 +66,8 @@ export class SITCustomTraders implements IPreAkiLoadMod, IPostDBLoadMod
                 {
                     const buyData = <IProcessBuyTradeRequestData>request;
                     this.buyFromCoopTrader(pmcData, request, sessionID);
-                    return this.tradeHelper.buyItem(pmcData, buyData, sessionID, false, null);
+                    this.tradeHelper.buyItem(pmcData, buyData, sessionID, false, output);
+                    return output;
                 }
 
                 // selling
@@ -71,7 +76,8 @@ export class SITCustomTraders implements IPreAkiLoadMod, IPostDBLoadMod
                     const sellData = <IProcessSellTradeRequestData>request;
                     this.sellToCoopTrader(pmcData, request, sessionID);
                     // return this.tradeHelper.sellItem(pmcData, sellData, sessionID);
-                    return this.tradeHelper.sellItem(pmcData, pmcData, sellData, sessionID);
+                    this.tradeHelper.sellItem(pmcData, pmcData, sellData, sessionID, output);
+                    return output;
                     
                 }
 
