@@ -1,0 +1,54 @@
+on:
+  workflow_dispatch:
+
+name: Create Release
+
+jobs:
+  build:
+    permissions: write-all
+    name: Create Release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+      - name: Checkout master Branch
+        uses: actions/checkout@v2
+        with:
+          ref: 'master'
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Read package.json
+        id: read_package_json
+        run: echo "::set-output name=version::$(node -e 'console.log(require(`./package.json`).version)')"
+
+      - name: Build Release Package
+        id: build
+        shell: pwsh
+        run: |
+          ./package_release_with_server.ps1 -Overwrite -Branch "3.8.0" -SITCoopVer ${{ steps.read_package_json.outputs.version }}
+          echo "ZIP_NAME=$(Get-Content "$env:GITHUB_OUTPUT" | Select-String -Pattern "^ZIP_NAME=").Value.Split('=')[1]" >> $GITHUB_ENV
+          echo "COMMIT_SHORT=$(Get-Content "$env:GITHUB_OUTPUT" | Select-String -Pattern "^CommitShort=").Value.Split('=')[1]" >> $GITHUB_ENV
+          echo "AKI_VERSION=$(Get-Content "$env:GITHUB_OUTPUT" | Select-String -Pattern "^AKI_VERSION=").Value.Split('=')[1]" >> $GITHUB_ENV
+      
+      - name: Debug output variables
+        run: |
+          echo "AKI_VERSION: ${{ env.AKI_VERSION }}"
+          echo "COMMIT_SHORT: ${{ env.COMMIT_SHORT }}"
+          echo "ZIP_NAME: ${{ env.ZIP_NAME }}"
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          draft: true
+          prerelease: false
+          generate_release_notes: true
+      
