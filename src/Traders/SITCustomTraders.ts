@@ -38,7 +38,8 @@ export class SITCustomTraders implements IPreAkiLoadMod, IPostDBLoadMod
 
         this.databaseServer = container.resolve<DatabaseServer>("DatabaseServer");
 
-        SITCustomTraders.traders.push(new CoopGroupTrader(), new UsecTrader(), new BearTrader());
+        // SITCustomTraders.traders.push(new CoopGroupTrader(), new UsecTrader(), new BearTrader());
+        SITCustomTraders.traders.push(new CoopGroupTrader());
         // Initialize Custom Traders
         for(const t of SITCustomTraders.traders) {
             t.preAkiLoad(container);
@@ -122,7 +123,7 @@ export class SITCustomTraders implements IPreAkiLoadMod, IPostDBLoadMod
 
         // -------------------------------------------
         // Get Dynamic Assort Path
-        const traderDbPath = path.join( process.cwd(), "user", "cache", "SITCoop", traderId);
+        const traderDbPath = path.join( process.cwd(), "user", "cache", "PaulovsSITCoop", traderId);
         if(!fs.existsSync(traderDbPath))
             fs.mkdirSync(traderDbPath, { recursive: true });
         
@@ -140,26 +141,41 @@ export class SITCustomTraders implements IPreAkiLoadMod, IPostDBLoadMod
 
         const currentAssort:[any] = JSON.parse(fs.readFileSync(dynamicAssortFilePath).toString());
 
-        const assortItem = this.databaseServer.getTables().traders[traderId].assort.items[assortItemIndex];
+        const assortItem = this.traderAssortHelper.getAssort(sessionID, traderId).items[assortItemIndex];
 
-        const storedAssortItemIndex = currentAssort.findIndex(x => x.tpl == assortItem._tpl);
-        if (storedAssortItemIndex === -1)
-            return false;
+        let result = false;
+        for(const item of currentAssort) {
+            if(item.length == undefined) {
+                const storedAssortItemIndex = currentAssort.findIndex(x => x.tpl == assortItem._tpl);
+                if (storedAssortItemIndex === -1)
+                    continue;
+        
+                if(currentAssort[storedAssortItemIndex].count - buyData.count <= 0) {
+                    currentAssort.splice(storedAssortItemIndex, 1);
+                    result = true;
+                }
+                else {
+                    currentAssort[storedAssortItemIndex].count -= buyData.count;
+                    result = true;
+                }
+            }
+            else {
+                if (item.length == 0)
+                    continue;
 
-        if(currentAssort[storedAssortItemIndex].count - buyData.count <= 0) {
-            currentAssort.splice(storedAssortItemIndex, 1);
+                console.log(item);
+                const indexOfGroupedItem = currentAssort.findIndex(x => x == item);
+                if(indexOfGroupedItem !== -1)
+                    currentAssort.splice(indexOfGroupedItem, 1);
+
+            }
         }
-        else {
-            currentAssort[storedAssortItemIndex].count -= buyData.count;
-        }
+        
 
         // save the change to file
         fs.writeFileSync(dynamicAssortFilePath, JSON.stringify(currentAssort));
 
-        // regenerage the assort
-        // SITCustomTraders.traders[0].createAssort(this.databaseServer.getTables());
-
-        return true;
+        return result;
         
     }
 
@@ -175,7 +191,7 @@ export class SITCustomTraders implements IPreAkiLoadMod, IPostDBLoadMod
 
         // -------------------------------------------
         // Get Dynamic Assort Path
-        const traderDbPath = path.join( process.cwd(), "user", "cache", "SITCoop", traderId);
+        const traderDbPath = path.join( process.cwd(), "user", "cache", "PaulovsSITCoop", traderId);
         if(!fs.existsSync(traderDbPath))
             fs.mkdirSync(traderDbPath, { recursive: true });
 
@@ -200,20 +216,26 @@ export class SITCustomTraders implements IPreAkiLoadMod, IPostDBLoadMod
 
             const childItems = this.itemHelper.findAndReturnChildrenAsItems(pmcData.Inventory.items, itemIdToFind);
             if (childItems) {
-                // Add all the childItems
-                for(const childItem of childItems) {
+                if(childItems.length == 1) {
+                    const childItem = childItems[0];
                     console.log(childItem);
                     const indexOfExisting = currentAssort.findIndex(x => x["tpl"] == childItem._tpl);
 
                     let count = childItem.upd !== undefined && childItem.upd?.StackObjectsCount !== undefined ? childItem.upd.StackObjectsCount : 1;
 
                     if(indexOfExisting == -1) {
-                        currentAssort.push({ tpl: childItem._tpl, count: count });
+                        currentAssort.push({ 
+                            tpl: childItem._tpl
+                            , count: count
+                        });
                     }
                     else {
                         currentAssort[indexOfExisting]["count"] += count;
                     }
-                    
+                }
+                else {
+                    // Add grouped item
+                    currentAssort.push(childItems);
                 }
             }
 
