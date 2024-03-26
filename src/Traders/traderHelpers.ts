@@ -1,6 +1,6 @@
 import { PreAkiModLoader } from "@spt-aki/loaders/PreAkiModLoader";
 import { Item } from "@spt-aki/models/eft/common/tables/IItem";
-import { ITraderAssort, ITraderBase } from "@spt-aki/models/eft/common/tables/ITrader";
+import { ITraderBase, ITraderAssort } from "@spt-aki/models/eft/common/tables/ITrader";
 import { ITraderConfig, UpdateTime } from "@spt-aki/models/spt/config/ITraderConfig";
 import { IDatabaseTables } from "@spt-aki/models/spt/server/IDatabaseTables";
 import { ImageRouter } from "@spt-aki/routers/ImageRouter";
@@ -18,7 +18,7 @@ export class TraderHelper
      public registerProfileImage(baseJson: any, modName: string, preAkiModLoader: PreAkiModLoader, imageRouter: ImageRouter, traderImageName: string): void
      {
          // Reference the mod "res" folder
-         const imageFilepath = `./${preAkiModLoader.getModPath(modName)}/Traders/res`;
+         const imageFilepath = `./${preAkiModLoader.getModPath(modName)}res`;
  
          // Register a route to point to the profile picture - remember to remove the .jpg from it
          imageRouter.addRoute(baseJson.avatar.replace(".jpg", ""), `${imageFilepath}/${traderImageName}`);
@@ -28,14 +28,18 @@ export class TraderHelper
      * Add record to trader config to set the refresh time of trader in seconds (default is 60 minutes)
      * @param traderConfig trader config to add our trader to
      * @param baseJson json file for trader (db/base.json)
-     * @param refreshTimeSeconds How many sections between trader stock refresh
+     * @param refreshTimeSecondsMin How many seconds between trader stock refresh min time
+     * @param refreshTimeSecondsMax How many seconds between trader stock refresh max time
      */
-    public setTraderUpdateTime(traderConfig: ITraderConfig, baseJson: any, refreshTimeSeconds: number): void
+    public setTraderUpdateTime(traderConfig: ITraderConfig, baseJson: any, refreshTimeSecondsMin: number, refreshTimeSecondsMax: number): void
     {
         // Add refresh time in seconds to config
         const traderRefreshRecord: UpdateTime = {
             traderId: baseJson._id,
-            seconds: refreshTimeSeconds };
+            seconds: {
+                min: refreshTimeSecondsMin,
+                max: refreshTimeSecondsMax
+            } };
 
         traderConfig.updateTime.push(traderRefreshRecord);
     }

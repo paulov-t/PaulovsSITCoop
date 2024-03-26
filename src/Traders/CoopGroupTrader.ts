@@ -58,7 +58,7 @@ export class CoopGroupTrader implements IPreAkiLoadMod, IPostDBLoadMod
         this.traderHelper = new TraderHelper();
         this.fluentTraderAssortHelper = new FluentAssortConstructor(hashUtil, this.logger);
         this.traderHelper.registerProfileImage(baseJson, this.mod, preAkiModLoader, imageRouter, "coop.jpg");
-        this.traderHelper.setTraderUpdateTime(traderConfig, baseJson, 3600);
+        this.traderHelper.setTraderUpdateTime(traderConfig, baseJson, 60, 3600);
 
 
     }
